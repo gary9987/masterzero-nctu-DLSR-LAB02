@@ -115,9 +115,9 @@ def data_loading(loader, dataset):
         ))
 
 def main():
-    train_datapath = "/food11re/skewed_training"
-    valid_datapath = "/food11re/validation"
-    test_datapath = "/food11re/evaluation"
+    train_datapath = "./food11re/skewed_training"
+    valid_datapath = "./food11re/validation"
+    test_datapath = "./food11re/evaluation"
 
     train_dataset = Food11Dataset(train_datapath, is_train=True)
     valid_dataset = Food11Dataset(valid_datapath, is_train=False)
