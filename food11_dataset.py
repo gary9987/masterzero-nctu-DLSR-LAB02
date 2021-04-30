@@ -35,8 +35,7 @@ def input_transform():
     ])
 
 class Food11Dataset(data.Dataset):
-    def __init__(self, image_dir, 
-                 input_transform=input_transform, is_train=False):
+    def __init__(self, image_dir, input_transform=input_transform, is_train=False):
         super(Food11Dataset, self).__init__()
         path_pattern = image_dir + '/**/*.*'
         files_list = glob.glob(path_pattern, recursive=True)
