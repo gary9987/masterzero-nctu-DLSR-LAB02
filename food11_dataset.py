@@ -3,9 +3,14 @@ from os.path import join, splitext, basename
 import glob
 
 import torch.utils.data as data
-import torchvision.transforms as trans
+import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from PIL import Image
+import PIL
+import imgaug as ia
+from imgAugTransform import ImgAugTransform
+
+ia.seed(1)
 
 code2names = {
     0:"Bread",
@@ -29,19 +34,32 @@ def load_img(filepath):
     return img
 
 def input_transform():
-    return trans.Compose([
-        trans.Resize((224, 224)),
-        trans.ToTensor(),
+    return transforms.Compose([
+        transforms.RandomRotation(30),
+        transforms.RandomResizedCrop(224),
+        transforms.RandomHorizontalFlip(),
+        ImgAugTransform(),
+        lambda x: PIL.Image.fromarray(x),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406],
+                             [0.229, 0.224, 0.225])
     ])
 
+
+
+
 class Food11Dataset(data.Dataset):
+
     def __init__(self, image_dir, input_transform=input_transform, is_train=False):
+
         super(Food11Dataset, self).__init__()
+        self.is_train = is_train
         path_pattern = image_dir + '/**/*.*'
         files_list = glob.glob(path_pattern, recursive=True)
         self.datapath = image_dir
         self.image_filenames = []
         self.num_per_classes = {}
+        self.class_start_idx = {}
         for file in files_list:
             if is_image_file(file):
                 self.image_filenames.append(file)
@@ -50,6 +68,8 @@ class Food11Dataset(data.Dataset):
                     self.num_per_classes[class_name] += 1
                 else:
                     self.num_per_classes[class_name] = 1
+                    self.class_start_idx[class_name] = len(self.image_filenames) - 1
+
         self.input_transform = input_transform
 
     def __getitem__(self, index):
@@ -80,18 +100,42 @@ class Food11Dataset(data.Dataset):
     #if the weight > 100, we create new data by copying
     #if the weight < 100, we will delete the original data
     #[hint]you only need to edit the "self.image_filenames" 
-
+    
     wts = [ 125, 80, 25, 100, 200, 800, 80, 60, 40, 150, 1000 ]
-    def augmentation(self)
+    def augmentation(self):
         if is_train:
             pass
+    '''
+    def augmentation(self, wts):
+        if self.is_train:
+            image_filenames = []
+            classes_num = len(self.num_per_classes)
 
-    def augmentation(self, wts)
-        if is_train:
-            pass
+            for classes in range(classes_num):
+                origin = self.num_per_classes[classes]
+                ratio = wts[classes]/100
+                current_idx = self.class_start_idx[classes]
 
-    ODOT [Lab 2-1]'''
-     
+                if ratio > 1:
+                    after = int(origin * ratio)
+                    tmp_filenames = self.image_filenames[current_idx:current_idx + origin]
+                    count = 0
+                    while origin < after:
+                        tmp_filenames.append(self.image_filenames[current_idx + count])
+                        count += 1
+                        count %= self.num_per_classes[classes]
+                        origin += 1
+                    image_filenames += tmp_filenames
+                elif ratio < 1:
+                    after = int(origin * ratio)
+                    tmp_filenames = self.image_filenames[current_idx:current_idx + after]
+                    image_filenames += tmp_filenames
+                else:
+                    image_filenames += self.image_filenames[current_idx:current_idx+origin]
+
+            self.image_filenames = image_filenames
+
+
 
 def data_loading(loader, dataset):
 
@@ -127,6 +171,8 @@ def main():
     wts = [ 125, 80, 25, 100, 200, 800, 80, 60, 40, 150, 1000 ]
     train_dataset.augmentation(wts)
     '''
+    wts = [100, 781, 67, 169, 196, 75, 757, 1190, 194, 67, 2857]
+    train_dataset.augmentation(wts)
 
     print("----------------------------------------------------------------------------------")
     print("Dataset bf. loading - ", train_datapath)
@@ -140,9 +186,9 @@ def main():
     print("Dataset bf. loading - ", test_datapath)
     print(test_dataset.show_details())
 
-    train_loader = DataLoader(dataset=train_dataset, num_workers=4, batch_size=8, shuffle=True)
-    valid_loader = DataLoader(dataset=valid_dataset, num_workers=4, batch_size=8, shuffle=False)
-    test_loader = DataLoader(dataset=test_dataset, num_workers=4, batch_size=8, shuffle=False)
+    train_loader = DataLoader(dataset=train_dataset, num_workers=4, batch_size=100, shuffle=True)
+    valid_loader = DataLoader(dataset=valid_dataset, num_workers=4, batch_size=100, shuffle=False)
+    test_loader = DataLoader(dataset=test_dataset, num_workers=4, batch_size=100, shuffle=False)
 
     data_loading(train_loader, train_dataset)
     data_loading(valid_loader, valid_dataset)
