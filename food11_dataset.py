@@ -185,29 +185,19 @@ def main():
     valid_dataset = Food11Dataset(valid_datapath, is_train=False)
     test_dataset = Food11Dataset(test_datapath, is_train=False)
 
-    #print(train_dataset[1][0].shape)
-    #img = np.ndarray(train_dataset[1][0])
-    #img = np.squeeze(img)
-    #plt.imshow(train_dataset[1][0].permute(1, 2, 0))
-    #plt.show()
-
-    ''' For [Lab 2-1] debugging
-    train_dataset.augmentation()
-    wts = [ 125, 80, 25, 100, 200, 800, 80, 60, 40, 150, 1000 ]
-    train_dataset.augmentation(wts)
-    '''
-
     #wts = [100, 781, 67, 169, 196, 75, 757, 1190, 194, 67, 2857]
     #train_dataset.augmentation(wts)
+
 
     weight = []
     for i in range(11):
         weight.append(1./(train_dataset.num_per_classes[i]/len(train_dataset)))
 
     samples_weight = np.array([weight[t] for _, t in train_dataset])
-    samples_weight = torch.from_numpy(samples_weight)
-    samples_weight = samples_weight.double()
-    sampler = data.WeightedRandomSampler(samples_weight, num_samples=9000, replacement=True)
+    weighted_sampler = data.WeightedRandomSampler(samples_weight, num_samples=9000, replacement=True)
+
+    randon_sampler = data.RandomSampler(train_dataset, replacement=True, num_samples=9000, generator=None)
+
 
     print("----------------------------------------------------------------------------------")
     print("Dataset bf. loading - ", train_datapath)
@@ -221,12 +211,13 @@ def main():
     print("Dataset bf. loading - ", test_datapath)
     print(test_dataset.show_details())
 
+    train_loader3 = DataLoader(dataset=train_dataset, num_workers=0, batch_size=100, sampler=randon_sampler)
     train_loader2 = DataLoader(dataset=train_dataset2, num_workers=0, batch_size=100, sampler=ImbalancedDatasetSampler(train_dataset2, num_samples=9000))
-    #train_loader2 = DataLoader(dataset=train_dataset2, num_workers=0, batch_size=100, sampler=sampler)
-    train_loader = DataLoader(dataset=train_dataset, num_workers=0, batch_size=100, sampler=sampler)
+    train_loader = DataLoader(dataset=train_dataset, num_workers=0, batch_size=100, sampler=weighted_sampler)
     valid_loader = DataLoader(dataset=valid_dataset, num_workers=0, batch_size=100, shuffle=False)
     test_loader = DataLoader(dataset=test_dataset, num_workers=0, batch_size=100, shuffle=False)
 
+    data_loading(train_loader3, train_dataset)
     data_loading(train_loader2, train_dataset)
     data_loading(train_loader, train_dataset)
     data_loading(valid_loader, valid_dataset)

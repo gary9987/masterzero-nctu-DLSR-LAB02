@@ -22,7 +22,72 @@ masterzero-nctu-DLSR-LAB02
     Soup                |1500           |1005           
     Vegetable_fruit     |35             |999  
     ```
-
+## LAB2-2
+- torch.utils.data.RandomSampler
+  ```python=
+  randon_sampler = data.RandomSampler(train_dataset, replacement=True, num_samples=9000, generator=None)
+  ```
+  ```
+  ----------------------------------------------------------------------------------
+  Dataset -  ./food11re/skewed_training
+  class_name          |bf. loading    |af. loading    
+  Bread               |994            |1253           
+  Dairy_product       |128            |167            
+  Dessert             |1500           |1843           
+  Egg                 |591            |758            
+  Fried_food          |508            |606            
+  Meat                |1325           |1645           
+  Noodles             |132            |143            
+  Rice                |84             |102            
+  Seafood             |513            |646            
+  Soup                |1500           |1789           
+  Vegetable_fruit     |35             |48             
+  ```
+- torch.utils.data.WeightedRandomSampler
+  ```python=
+  weight = []
+  for i in range(11):
+      weight.append(1./(train_dataset.num_per_classes[i]/len(train_dataset)))
+  
+  samples_weight = np.array([weight[t] for _, t in train_dataset])
+  weighted_sampler = data.WeightedRandomSampler(samples_weight, num_samples=9000, replacement=True)
+  ```
+  ```
+  ----------------------------------------------------------------------------------
+  Dataset -  ./food11re/skewed_training
+  class_name          |bf. loading    |af. loading    
+  Bread               |994            |791            
+  Dairy_product       |128            |781            
+  Dessert             |1500           |838            
+  Egg                 |591            |810            
+  Fried_food          |508            |811            
+  Meat                |1325           |874            
+  Noodles             |132            |847            
+  Rice                |84             |810            
+  Seafood             |513            |806            
+  Soup                |1500           |824            
+  Vegetable_fruit     |35             |808       
+  ```
+- torchsampler.ImbalancedDatasetSampler
+  ```python=
+  train_loader2 = DataLoader(dataset=train_dataset2, num_workers=0, batch_size=100, sampler=ImbalancedDatasetSampler(train_dataset2, num_samples=9000))
+  ```
+  ```
+  ----------------------------------------------------------------------------------
+  Dataset -  ./food11re/skewed_training
+  class_name          |bf. loading    |af. loading    
+  Bread               |994            |806            
+  Dairy_product       |128            |831            
+  Dessert             |1500           |789            
+  Egg                 |591            |801            
+  Fried_food          |508            |799            
+  Meat                |1325           |849            
+  Noodles             |132            |814            
+  Rice                |84             |805            
+  Seafood             |513            |849            
+  Soup                |1500           |826            
+  Vegetable_fruit     |35             |831  
+  ```
 
 ## Reference
 - LAB2-1
