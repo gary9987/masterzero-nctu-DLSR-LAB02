@@ -207,7 +207,7 @@ def main():
     samples_weight = np.array([weight[t] for _, t in train_dataset])
     samples_weight = torch.from_numpy(samples_weight)
     samples_weight = samples_weight.double()
-    sampler = data.WeightedRandomSampler(samples_weight, num_samples=11000, replacement=True)
+    sampler = data.WeightedRandomSampler(samples_weight, num_samples=9000, replacement=True)
 
     print("----------------------------------------------------------------------------------")
     print("Dataset bf. loading - ", train_datapath)
@@ -221,9 +221,8 @@ def main():
     print("Dataset bf. loading - ", test_datapath)
     print(test_dataset.show_details())
 
-    #train_loader2 = DataLoader(dataset=train_dataset2, num_workers=0, batch_size=100, sampler=ImbalancedDatasetSampler(train_dataset2))
-    train_loader2 = DataLoader(dataset=train_dataset2, num_workers=0, batch_size=100,
-                               sampler=sampler)
+    train_loader2 = DataLoader(dataset=train_dataset2, num_workers=0, batch_size=100, sampler=ImbalancedDatasetSampler(train_dataset2, num_samples=9000))
+    #train_loader2 = DataLoader(dataset=train_dataset2, num_workers=0, batch_size=100, sampler=sampler)
     train_loader = DataLoader(dataset=train_dataset, num_workers=0, batch_size=100, sampler=sampler)
     valid_loader = DataLoader(dataset=valid_dataset, num_workers=0, batch_size=100, shuffle=False)
     test_loader = DataLoader(dataset=test_dataset, num_workers=0, batch_size=100, shuffle=False)
