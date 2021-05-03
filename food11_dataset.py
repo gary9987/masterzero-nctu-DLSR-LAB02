@@ -2,6 +2,9 @@ from os import listdir
 from os.path import join, splitext, basename
 import glob
 
+import matplotlib.pyplot as plt
+import numpy as np
+import torchvision
 import torch.utils.data as data
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
@@ -9,8 +12,8 @@ from PIL import Image
 import PIL
 import imgaug as ia
 from imgAugTransform import ImgAugTransform
+from torchsampler import ImbalancedDatasetSampler
 
-ia.seed(1)
 
 code2names = {
     0:"Bread",
@@ -40,6 +43,7 @@ def input_transform():
         transforms.RandomHorizontalFlip(),
         ImgAugTransform(),
         lambda x: PIL.Image.fromarray(x),
+
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406],
                              [0.229, 0.224, 0.225])
@@ -140,7 +144,7 @@ class Food11Dataset(data.Dataset):
 def data_loading(loader, dataset):
 
     num_per_classes = {}
-    for batch_idx, (data, label) in enumerate(loader):
+    for data_, label in loader:
         for l in label:
             if l.item() in num_per_classes:
                 num_per_classes[l.item()] += 1
@@ -158,21 +162,48 @@ def data_loading(loader, dataset):
         ))
 
 def main():
+    ia.seed(1)
+
     train_datapath = "./food11re/skewed_training"
     valid_datapath = "./food11re/validation"
     test_datapath = "./food11re/evaluation"
 
+    transform = transforms.Compose([
+        transforms.RandomRotation(30),
+        transforms.RandomResizedCrop(224),
+        transforms.RandomHorizontalFlip(),
+        ImgAugTransform(),
+        lambda x: PIL.Image.fromarray(x),
+
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406],
+                             [0.229, 0.224, 0.225])
+    ])
+
     train_dataset = Food11Dataset(train_datapath, is_train=True)
+    train_dataset2 = torchvision.datasets.ImageFolder(root='./food11re/skewed_training', transform=transform)
     valid_dataset = Food11Dataset(valid_datapath, is_train=False)
     test_dataset = Food11Dataset(test_datapath, is_train=False)
+
+    #print(train_dataset[1][0].shape)
+    #img = np.ndarray(train_dataset[1][0])
+    #img = np.squeeze(img)
+    #plt.imshow(train_dataset[1][0].permute(1, 2, 0))
+    #plt.show()
 
     ''' For [Lab 2-1] debugging
     train_dataset.augmentation()
     wts = [ 125, 80, 25, 100, 200, 800, 80, 60, 40, 150, 1000 ]
     train_dataset.augmentation(wts)
     '''
-    wts = [100, 781, 67, 169, 196, 75, 757, 1190, 194, 67, 2857]
-    train_dataset.augmentation(wts)
+
+    #wts = [100, 781, 67, 169, 196, 75, 757, 1190, 194, 67, 2857]
+    #train_dataset.augmentation(wts)
+
+    weight = []
+    for i in range(11):
+        weight.append(1/(train_dataset.num_per_classes[i]/len(train_dataset)))
+    sampler = data.WeightedRandomSampler(weight, num_samples=11000, replacement=True)
 
     print("----------------------------------------------------------------------------------")
     print("Dataset bf. loading - ", train_datapath)
@@ -186,13 +217,16 @@ def main():
     print("Dataset bf. loading - ", test_datapath)
     print(test_dataset.show_details())
 
-    train_loader = DataLoader(dataset=train_dataset, num_workers=4, batch_size=100, shuffle=True)
-    valid_loader = DataLoader(dataset=valid_dataset, num_workers=4, batch_size=100, shuffle=False)
-    test_loader = DataLoader(dataset=test_dataset, num_workers=4, batch_size=100, shuffle=False)
+    train_loader2 = DataLoader(dataset=train_dataset2, num_workers=0, batch_size=100, sampler=ImbalancedDatasetSampler(train_dataset2))
+    train_loader = DataLoader(dataset=train_dataset, num_workers=0, batch_size=100, shuffle=False)
+    valid_loader = DataLoader(dataset=valid_dataset, num_workers=0, batch_size=100, shuffle=False)
+    test_loader = DataLoader(dataset=test_dataset, num_workers=0, batch_size=100, shuffle=False)
 
+    data_loading(train_loader2, train_dataset)
     data_loading(train_loader, train_dataset)
     data_loading(valid_loader, valid_dataset)
     data_loading(test_loader, test_dataset)
+
 
 if __name__ == '__main__':
     main()
