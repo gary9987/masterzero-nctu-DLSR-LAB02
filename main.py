@@ -7,7 +7,7 @@ from imgAugTransform import ImgAugTransform
 from torchsampler import ImbalancedDatasetSampler
 import torch.nn as nn
 import PIL
-
+from autoaugment import ImageNetPolicy
 if __name__ == '__main__':
 
     print("==> Check devices..")
@@ -30,6 +30,7 @@ if __name__ == '__main__':
         transforms.RandomRotation(45),
         transforms.RandomResizedCrop(224),
         transforms.RandomHorizontalFlip(),
+        ImageNetPolicy(),
         #ImgAugTransform(),
         #lambda x: PIL.Image.fromarray(x),
         transforms.ToTensor(),
@@ -60,7 +61,7 @@ if __name__ == '__main__':
     # In this case, we define a DataLoader to random sample our dataset.
     # For single sampling, we take one batch of data. Each batch consists 4 images
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=40,
-                                              shuffle=False, sampler=ImbalancedDatasetSampler(trainset, num_samples=9000), num_workers=2)
+                                              shuffle=False, sampler=ImbalancedDatasetSampler(trainset, num_samples=10000), num_workers=0)
 
     validloader = torch.utils.data.DataLoader(validset, batch_size=20,
                                               shuffle=True, num_workers=2)
