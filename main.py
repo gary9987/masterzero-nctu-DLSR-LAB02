@@ -60,7 +60,7 @@ if __name__ == '__main__':
     # In this case, we define a DataLoader to random sample our dataset.
     # For single sampling, we take one batch of data. Each batch consists 4 images
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=40,
-                                              shuffle=False, sampler=ImbalancedDatasetSampler(trainset), num_workers=2)
+                                              shuffle=False, sampler=ImbalancedDatasetSampler(trainset, num_samples=9000), num_workers=2)
 
     validloader = torch.utils.data.DataLoader(validset, batch_size=20,
                                               shuffle=True, num_workers=2)
@@ -169,7 +169,7 @@ if __name__ == '__main__':
         # valid_losses.append(valid_loss.item()/len(valid_loader.dataset)
         train_loss = train_loss / len(trainloader.sampler)
         valid_loss = valid_loss / len(validloader.dataset)
-        train_correct = 100. * train_correct / len(trainset)
+        train_correct = 100. * train_correct / len(trainloader.sampler)
         valid_correct = 100. * valid_correct / len(validset)
 
         # print training/validation statistics
