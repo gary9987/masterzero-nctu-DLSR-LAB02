@@ -181,7 +181,7 @@ def main():
     ])
 
     train_dataset = Food11Dataset(train_datapath, is_train=True)
-    train_dataset2 = torchvision.datasets.ImageFolder(root='./food11re/skewed_training', transform=transform)
+    train_dataset_folder = torchvision.datasets.ImageFolder(root='./food11re/skewed_training', transform=transform)
     valid_dataset = Food11Dataset(valid_datapath, is_train=False)
     test_dataset = Food11Dataset(test_datapath, is_train=False)
 
@@ -191,10 +191,11 @@ def main():
 
     weight = []
     for i in range(11):
-        weight.append(1./(train_dataset.num_per_classes[i]/len(train_dataset)))
+        class_count = train_dataset_folder.targets.count(i)
+        weight.append(1./(class_count/len(train_dataset_folder.targets)))
 
-    samples_weight = np.array([weight[t] for _, t in train_dataset])
-    weighted_sampler = data.WeightedRandomSampler(samples_weight, num_samples=9000, replacement=True)
+    samples_weight = np.array([weight[t] for _, t in train_dataset_folder])
+    weighted_sampler = data.WeightedRandomSampler(samples_weight, num_samples=15000, replacement=True)
 
     randon_sampler = data.RandomSampler(train_dataset, replacement=True, num_samples=9000, generator=None)
 
@@ -211,14 +212,13 @@ def main():
     print("Dataset bf. loading - ", test_datapath)
     print(test_dataset.show_details())
 
-    train_loader3 = DataLoader(dataset=train_dataset, num_workers=0, batch_size=100, sampler=randon_sampler)
-    train_loader2 = DataLoader(dataset=train_dataset2, num_workers=0, batch_size=100, sampler=ImbalancedDatasetSampler(train_dataset2, num_samples=9000))
-    train_loader = DataLoader(dataset=train_dataset, num_workers=0, batch_size=100, sampler=weighted_sampler)
+
+    train_folder_loader = DataLoader(dataset=train_dataset_folder, num_workers=0, batch_size=100, sampler=weighted_sampler)
+    train_loader = DataLoader(dataset=train_dataset, num_workers=0, batch_size=100, sampler=randon_sampler)
     valid_loader = DataLoader(dataset=valid_dataset, num_workers=0, batch_size=100, shuffle=False)
     test_loader = DataLoader(dataset=test_dataset, num_workers=0, batch_size=100, shuffle=False)
 
-    data_loading(train_loader3, train_dataset)
-    data_loading(train_loader2, train_dataset)
+    data_loading(train_folder_loader, train_dataset)
     data_loading(train_loader, train_dataset)
     data_loading(valid_loader, valid_dataset)
     data_loading(test_loader, test_dataset)

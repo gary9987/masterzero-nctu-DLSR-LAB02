@@ -47,26 +47,27 @@ masterzero-nctu-DLSR-LAB02
   ```python=
   weight = []
   for i in range(11):
-      weight.append(1./(train_dataset.num_per_classes[i]/len(train_dataset)))
-  
-  samples_weight = np.array([weight[t] for _, t in train_dataset])
-  weighted_sampler = data.WeightedRandomSampler(samples_weight, num_samples=9000, replacement=True)
+      class_count = train_dataset2.targets.count(i)
+      weight.append(1./(class_count/len(train_dataset2.targets)))
+
+  samples_weight = np.array([weight[t] for _, t in train_dataset2])
+  weighted_sampler = data.WeightedRandomSampler(samples_weight, num_samples=15000, replacement=True)
   ```
   ```
   ----------------------------------------------------------------------------------
   Dataset -  ./food11re/skewed_training
   class_name          |bf. loading    |af. loading    
-  Bread               |994            |791            
-  Dairy_product       |128            |781            
-  Dessert             |1500           |838            
-  Egg                 |591            |810            
-  Fried_food          |508            |811            
-  Meat                |1325           |874            
-  Noodles             |132            |847            
-  Rice                |84             |810            
-  Seafood             |513            |806            
-  Soup                |1500           |824            
-  Vegetable_fruit     |35             |808       
+  Bread               |994            |1323           
+  Dairy_product       |128            |1418           
+  Dessert             |1500           |1394           
+  Egg                 |591            |1359           
+  Fried_food          |508            |1366           
+  Meat                |1325           |1299           
+  Noodles             |132            |1370           
+  Rice                |84             |1306           
+  Seafood             |513            |1395           
+  Soup                |1500           |1373           
+  Vegetable_fruit     |35             |1397       
   ```
 - torchsampler.ImbalancedDatasetSampler
   ```python=
