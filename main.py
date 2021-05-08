@@ -27,12 +27,11 @@ if __name__ == '__main__':
 
     # The transform function for train data
     transform_train = transforms.Compose([
-        transforms.RandomRotation(45),
+        transforms.RandomRotation(90),
         transforms.RandomResizedCrop(224),
         transforms.RandomHorizontalFlip(),
-        ImageNetPolicy(),
-        #ImgAugTransform(),
-        #lambda x: PIL.Image.fromarray(x),
+        ImgAugTransform(),
+        lambda x: PIL.Image.fromarray(x),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406],
                              [0.229, 0.224, 0.225])
@@ -61,17 +60,17 @@ if __name__ == '__main__':
     # In this case, we define a DataLoader to random sample our dataset.
     # For single sampling, we take one batch of data. Each batch consists 4 images
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=40,
-                                              shuffle=False, sampler=ImbalancedDatasetSampler(trainset, num_samples=10000), num_workers=0)
+                                              shuffle=False, sampler=ImbalancedDatasetSampler(trainset, num_samples=15000), num_workers=0)
 
     validloader = torch.utils.data.DataLoader(validset, batch_size=20,
-                                              shuffle=True, num_workers=2)
+                                              shuffle=True, num_workers=4)
 
 
 
     print('==> Building model..')
 
     # declare a new model
-    net = torchvision.models.resnet34(pretrained=False)
+    net = torchvision.models.resnet18(pretrained=False)
     num_features = net.fc.in_features
     net.fc = nn.Sequential(
         nn.Dropout(0.5),
@@ -99,7 +98,7 @@ if __name__ == '__main__':
     # [document]: https://pytorch.org/docs/stable/nn.html#torch.nn.Module.train
 
     # number of epochs to train the model
-    n_epochs = 100
+    n_epochs = 80
 
     valid_loss_min = np.Inf  # track change in validation loss
 
