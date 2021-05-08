@@ -1,8 +1,6 @@
-from os import listdir
-from os.path import join, splitext, basename
+
+from os.path import basename
 import glob
-import torch
-import matplotlib.pyplot as plt
 import numpy as np
 import torchvision
 import torch.utils.data as data

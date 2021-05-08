@@ -5,6 +5,7 @@ from tqdm import tqdm
 import numpy as np
 from imgAugTransform import ImgAugTransform
 from torchsampler import ImbalancedDatasetSampler
+import torch.utils.data
 import torch.nn as nn
 import PIL
 from autoaugment import ImageNetPolicy
@@ -54,13 +55,20 @@ if __name__ == '__main__':
 
 
     # Dataset definition need to know your customized transform function
+    weight = []
+    for i in range(11):
+        class_count = trainset.targets.count(i)
+        weight.append(1. / (class_count / len(trainset.targets)))
+
+    samples_weight = np.array([weight[t] for _, t in trainset])
+    weighted_sampler = torch.utils.data.WeightedRandomSampler(samples_weight, num_samples=18000, replacement=True)
 
 
     # Create DataLoader to draw samples from the dataset
     # In this case, we define a DataLoader to random sample our dataset.
     # For single sampling, we take one batch of data. Each batch consists 4 images
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=40,
-                                              shuffle=False, sampler=ImbalancedDatasetSampler(trainset, num_samples=15000), num_workers=0)
+                                              shuffle=False, sampler=weighted_sampler, num_workers=0)
 
     validloader = torch.utils.data.DataLoader(validset, batch_size=20,
                                               shuffle=True, num_workers=4)
