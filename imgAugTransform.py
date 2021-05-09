@@ -5,12 +5,12 @@ import imgaug as ia
 
 class ImgAugTransform:
     def __init__(self):
-        self.aug = iaa.Sequential([
-            iaa.LinearContrast((0.75, 1.5)),
-            iaa.AdditiveGaussianNoise(scale=0.1 * 255),
+        self.aug = iaa.SomeOf((1, 2), [
+            iaa.GammaContrast((0.5, 2.0)),
             iaa.Multiply(),
+            iaa.GaussianBlur(1.0),
             iaa.AddToHueAndSaturation(value=(-10, 10), per_channel=True)  # 增加飽和度
-        ], random_order=True)
+        ])
 
     def __call__(self, img):
         img = np.array(img)
@@ -39,7 +39,7 @@ if __name__ == '__main__':
 
 
     transform_aug = transforms.Compose([
-        transforms.RandomRotation(45),
+        transforms.RandomRotation(90),
         transforms.RandomResizedCrop(224),
         transforms.RandomHorizontalFlip(),
         ImgAugTransform(),

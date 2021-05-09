@@ -5,6 +5,7 @@ from tqdm import tqdm
 import numpy as np
 from imgAugTransform import ImgAugTransform
 from torchsampler import ImbalancedDatasetSampler
+import torch.utils.data
 import torch.nn as nn
 import PIL
 from autoaugment import ImageNetPolicy
@@ -27,12 +28,11 @@ if __name__ == '__main__':
 
     # The transform function for train data
     transform_train = transforms.Compose([
-        transforms.RandomRotation(45),
+        transforms.RandomRotation(90),
         transforms.RandomResizedCrop(224),
         transforms.RandomHorizontalFlip(),
-        ImageNetPolicy(),
-        #ImgAugTransform(),
-        #lambda x: PIL.Image.fromarray(x),
+        ImgAugTransform(),
+        lambda x: PIL.Image.fromarray(x),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406],
                              [0.229, 0.224, 0.225])
@@ -55,28 +55,37 @@ if __name__ == '__main__':
 
 
     # Dataset definition need to know your customized transform function
+    weight = []
+    for i in range(11):
+        class_count = trainset.targets.count(i)
+        weight.append(1. / (class_count / len(trainset.targets)))
+
+    samples_weight = np.array([weight[t] for _, t in trainset])
+    weighted_sampler = torch.utils.data.WeightedRandomSampler(samples_weight, num_samples=18000, replacement=True)
 
 
     # Create DataLoader to draw samples from the dataset
     # In this case, we define a DataLoader to random sample our dataset.
     # For single sampling, we take one batch of data. Each batch consists 4 images
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=40,
-                                              shuffle=False, sampler=ImbalancedDatasetSampler(trainset, num_samples=10000), num_workers=0)
+                                              shuffle=False, sampler=weighted_sampler, num_workers=0)
 
     validloader = torch.utils.data.DataLoader(validset, batch_size=20,
-                                              shuffle=True, num_workers=2)
+                                              shuffle=True, num_workers=4)
 
 
 
     print('==> Building model..')
 
     # declare a new model
-    net = torchvision.models.resnet34(pretrained=False)
+    net = torchvision.models.resnet18(pretrained=False)
     num_features = net.fc.in_features
-    net.fc = nn.Sequential(
-        nn.Dropout(0.5),
-        nn.Linear(num_features, 11)
-    )
+    net.fc = nn.Linear(num_features, 11)
+
+    #net.fc = nn.Sequential(
+    #    nn.Dropout(0.5),
+    #    nn.Linear(num_features, 11)
+    #)
 
     # change all model tensor into cuda type
     # something like weight & bias are the tensor
@@ -99,7 +108,7 @@ if __name__ == '__main__':
     # [document]: https://pytorch.org/docs/stable/nn.html#torch.nn.Module.train
 
     # number of epochs to train the model
-    n_epochs = 100
+    n_epochs = 80
 
     valid_loss_min = np.Inf  # track change in validation loss
 
