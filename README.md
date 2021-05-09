@@ -122,6 +122,12 @@ masterzero-nctu-DLSR-LAB02
   ```
 - Using WeightRandomSampler to balance each class. (num_samples=18000)
   ```python=
+  weight = []
+  for i in range(11):
+    class_count = trainset.targets.count(i)
+    weight.append(1. / (class_count / len(trainset.targets)))
+    
+  samples_weight = np.array([weight[t] for _, t in trainset])
   weighted_sampler = torch.utils.data.WeightedRandomSampler(samples_weight, num_samples=18000, replacement=True)
   ```
 - Result
@@ -154,6 +160,25 @@ masterzero-nctu-DLSR-LAB02
   Top 3 accuracy of the network on the 3347 test images: 3185/3347  95.16 %
   95.15984463698835
   ```
+- Compare to DLSR-LAB01
+
+
+    | Class | LAB2 accuracy (%) | LAB1 accuracy (%) |
+    | -----:| -----------------:| -----------------:|
+    |     0 |             75.00 |             67.93 |
+    |     1 |             60.14 |             30.41 |
+    |     2 |             80.09 |             54.11 |
+    |     3 |             79.80 |             71.40 |
+    |     4 |             82.39 |             57.01 |
+    |     5 |             81.53 |             70.03 |
+    |     6 |             83.80 |             83.10 |
+    |     7 |             85.71 |             78.23 |
+    |     8 |             88.54 |             79.17 |
+    |     9 |             86.47 |             72.28 |
+    |    10 |             92.60 |             90.00 |
+    |  top1 |             82.37 |             71.35 |
+    |  top3 |             95.16 |             91.57 |
+
 ## Reference
 - LAB2-1
   - [pytorch基于resnet18预训练模型用于自己的训练数据集进行迁移学习](https://blog.csdn.net/booklijian/article/details/107214762)
@@ -162,3 +187,4 @@ masterzero-nctu-DLSR-LAB02
 - LAB2-2
   - [WRITING CUSTOM DATASETS, DATALOADERS AND TRANSFORMS](https://pytorch.org/tutorials/beginner/data_loading_tutorial.html)
   - [一文弄懂Pytorch的DataLoader, DataSet, Sampler之间的关系](https://www.cnblogs.com/marsggbo/p/11308889.html)
+  - [WeightedRandomSampler 理解了吧](https://blog.csdn.net/tyfwin/article/details/108435756)
