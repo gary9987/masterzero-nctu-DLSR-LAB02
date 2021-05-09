@@ -89,7 +89,67 @@ masterzero-nctu-DLSR-LAB02
   Soup                |1500           |826            
   Vegetable_fruit     |35             |831  
   ```
-
+## LAB2-3
+- Combine imgaug and torchvision.transform
+  ```python=
+  class ImgAugTransform:
+      def __init__(self):
+          self.aug = iaa.SomeOf((1, 2), [
+              iaa.GammaContrast((0.5, 2.0)),
+              iaa.Multiply(),
+              iaa.GaussianBlur(1.0),
+              iaa.AddToHueAndSaturation(value=(-10, 10), per_channel=True)  # 增加飽和度
+          ])
+  
+      def __call__(self, img):
+          img = np.array(img)
+          return self.aug.augment_image(img)
+    
+  transform_train = transforms.Compose([
+          transforms.RandomRotation(90),
+          transforms.RandomResizedCrop(224),
+          transforms.RandomHorizontalFlip(),
+          ImgAugTransform(),
+          lambda x: PIL.Image.fromarray(x),
+          transforms.ToTensor(),
+          transforms.Normalize([0.485, 0.456, 0.406],
+                               [0.229, 0.224, 0.225])
+      ])
+  ```
+- Using WeightRandomSampler to balance each class. (num_samples=18000)
+  ```python=
+  weighted_sampler = torch.utils.data.WeightedRandomSampler(samples_weight, num_samples=18000, replacement=True)
+  ```
+- Result
+  ```
+  Top 1 Accuracy of class  0 is 276/368  75.00%
+  Top 1 Accuracy of class  1 is  89/148  60.14%
+  Top 1 Accuracy of class  2 is 185/231  80.09%
+  Top 1 Accuracy of class  3 is 399/500  79.80%
+  Top 1 Accuracy of class  4 is 276/335  82.39%
+  Top 1 Accuracy of class  5 is 234/287  81.53%
+  Top 1 Accuracy of class  6 is 362/432  83.80%
+  Top 1 Accuracy of class  7 is 126/147  85.71%
+  Top 1 Accuracy of class  8 is  85/ 96  88.54%
+  Top 1 Accuracy of class  9 is 262/303  86.47%
+  Top 1 Accuracy of class 10 is 463/500  92.60%
+  Top 1 accuracy of the network on the 3347 test images: 2757/3347  82.37 %
+  82.37227367792053
+  
+  Top 3 Accuracy of class  0 is 351/368  95.38%
+  Top 3 Accuracy of class  1 is 115/148  77.70%
+  Top 3 Accuracy of class  2 is 220/231  95.24%
+  Top 3 Accuracy of class  3 is 484/500  96.80%
+  Top 3 Accuracy of class  4 is 316/335  94.33%
+  Top 3 Accuracy of class  5 is 270/287  94.08%
+  Top 3 Accuracy of class  6 is 423/432  97.92%
+  Top 3 Accuracy of class  7 is 137/147  93.20%
+  Top 3 Accuracy of class  8 is  93/ 96  96.88%
+  Top 3 Accuracy of class  9 is 284/303  93.73%
+  Top 3 Accuracy of class 10 is 492/500  98.40%
+  Top 3 accuracy of the network on the 3347 test images: 3185/3347  95.16 %
+  95.15984463698835
+  ```
 ## Reference
 - LAB2-1
   - [pytorch基于resnet18预训练模型用于自己的训练数据集进行迁移学习](https://blog.csdn.net/booklijian/article/details/107214762)

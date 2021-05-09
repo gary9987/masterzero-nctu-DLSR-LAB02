@@ -80,10 +80,12 @@ if __name__ == '__main__':
     # declare a new model
     net = torchvision.models.resnet18(pretrained=False)
     num_features = net.fc.in_features
-    net.fc = nn.Sequential(
-        nn.Dropout(0.5),
-        nn.Linear(num_features, 11)
-    )
+    net.fc = nn.Linear(num_features, 11)
+
+    #net.fc = nn.Sequential(
+    #    nn.Dropout(0.5),
+    #    nn.Linear(num_features, 11)
+    #)
 
     # change all model tensor into cuda type
     # something like weight & bias are the tensor

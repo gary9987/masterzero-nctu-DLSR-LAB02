@@ -47,12 +47,9 @@ if __name__ == '__main__':
     evalloader = DataLoader(dataset=evalset, batch_size=100)
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    net = torchvision.models.resnet34(pretrained=False)
+    net = torchvision.models.resnet18(pretrained=False)
     num_features = net.fc.in_features
-    net.fc = nn.Sequential(
-        nn.Dropout(0.5),
-        nn.Linear(num_features, 11)
-    )
+    net.fc = nn.Linear(num_features, 11)
 
     net.load_state_dict(torch.load('model_CNN.pth'))
     net = net.to(device)
