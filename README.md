@@ -7,6 +7,36 @@ masterzero-nctu-DLSR-LAB02
 ## LAB2-1
 - After balabced agumentation
     ```python=
+    def augmentation(self, wts):
+    if self.is_train:
+        image_filenames = []
+        classes_num = len(self.num_per_classes)
+
+        for classes in range(classes_num):
+            origin = self.num_per_classes[classes]
+            ratio = wts[classes]/100
+            current_idx = self.class_start_idx[classes]
+
+            if ratio > 1:
+                after = int(origin * ratio)
+                tmp_filenames = self.image_filenames[current_idx:current_idx + origin]
+                count = 0
+                while origin < after:
+                    tmp_filenames.append(self.image_filenames[current_idx + count])
+                    count += 1
+                    count %= self.num_per_classes[classes]
+                    origin += 1
+                image_filenames += tmp_filenames
+            elif ratio < 1:
+                after = int(origin * ratio)
+                tmp_filenames = self.image_filenames[current_idx:current_idx + after]
+                image_filenames += tmp_filenames
+            else:
+                image_filenames += self.image_filenames[current_idx:current_idx+origin]
+
+        self.image_filenames = image_filenames
+    ```
+    ```python=
     wts = [100, 781, 67, 169, 196, 75, 757, 1190, 194, 67, 2857]
     train_dataset.augmentation(wts)
     ```
@@ -99,9 +129,9 @@ masterzero-nctu-DLSR-LAB02
   class ImgAugTransform:
       def __init__(self):
           self.aug = iaa.SomeOf((1, 2), [
-              iaa.GammaContrast((0.5, 2.0)),
+              iaa.GammaContrast((0.5, 2.0)),  # 亮度
               iaa.Multiply(),
-              iaa.GaussianBlur(1.0),
+              iaa.GaussianBlur(1.0),  # 高斯模糊
               iaa.AddToHueAndSaturation(value=(-10, 10), per_channel=True)  # 增加飽和度
           ])
   
@@ -179,6 +209,145 @@ masterzero-nctu-DLSR-LAB02
     |  top1 |             82.37 |             71.35 |
     |  top3 |             95.16 |             91.57 |
 
+## Try to use transfer learning
+### Reference
+- [pytorch固定部分参数进行网络训练](https://www.jianshu.com/p/fcafcfb3d887)
+- [pytorch 固定部分参数训练](https://blog.csdn.net/guotong1988/article/details/79739775)
+### Main
+- 將包含layer2之前的參數都固定
+    ```python=
+    net = torchvision.models.resnet18(pretrained=True)
+    num_features=net.fc.in_features
+    net.fc=nn.Linear(num_features, 11)
+
+    for k,v in net.named_parameters():
+        print(k)
+        if (k=='conv1.weight' or k == 'bn1.weight' or k == 'bn1.bias'):
+            v.requires_grad=False
+        if (k[0:6] == 'layer1' or k[0:6] == 'layer2'):
+            v.requires_grad=False
+    ```
+- 檢查各層requires_grad之值
+    ```python=
+    for k,v in net.named_parameters():
+        print(k, v.requires_grad)
+    '''
+    conv1.weight False
+    bn1.weight False
+    bn1.bias False
+    layer1.0.conv1.weight False
+    layer1.0.bn1.weight False
+    layer1.0.bn1.bias False
+    layer1.0.conv2.weight False
+    layer1.0.bn2.weight False
+    layer1.0.bn2.bias False
+    layer1.1.conv1.weight False
+    layer1.1.bn1.weight False
+    layer1.1.bn1.bias False
+    layer1.1.conv2.weight False
+    layer1.1.bn2.weight False
+    layer1.1.bn2.bias False
+    layer2.0.conv1.weight False
+    layer2.0.bn1.weight False
+    layer2.0.bn1.bias False
+    layer2.0.conv2.weight False
+    layer2.0.bn2.weight False
+    layer2.0.bn2.bias False
+    layer2.0.downsample.0.weight False
+    layer2.0.downsample.1.weight False
+    layer2.0.downsample.1.bias False
+    layer2.1.conv1.weight False
+    layer2.1.bn1.weight False
+    layer2.1.bn1.bias False
+    layer2.1.conv2.weight False
+    layer2.1.bn2.weight False
+    layer2.1.bn2.bias False
+    layer3.0.conv1.weight True
+    layer3.0.bn1.weight True
+    layer3.0.bn1.bias True
+    layer3.0.conv2.weight True
+    layer3.0.bn2.weight True
+    layer3.0.bn2.bias True
+    layer3.0.downsample.0.weight True
+    layer3.0.downsample.1.weight True
+    layer3.0.downsample.1.bias True
+    layer3.1.conv1.weight True
+    layer3.1.bn1.weight True
+    layer3.1.bn1.bias True
+    layer3.1.conv2.weight True
+    layer3.1.bn2.weight True
+    layer3.1.bn2.bias True
+    layer4.0.conv1.weight True
+    layer4.0.bn1.weight True
+    layer4.0.bn1.bias True
+    layer4.0.conv2.weight True
+    layer4.0.bn2.weight True
+    layer4.0.bn2.bias True
+    layer4.0.downsample.0.weight True
+    layer4.0.downsample.1.weight True
+    layer4.0.downsample.1.bias True
+    layer4.1.conv1.weight True
+    layer4.1.bn1.weight True
+    layer4.1.bn1.bias True
+    layer4.1.conv2.weight True
+    layer4.1.bn2.weight True
+    layer4.1.bn2.bias True
+    fc.weight True
+    fc.bias True
+    '''
+    ```
+- Optimizer過濾掉不需要訓練的layer
+    ```python=
+    optimizer = optim.Adam(filter(lambda p: p.requires_grad, net.parameters()))
+    ```
+- Result
+    ```
+    Top 1 Accuracy of class  0 is 322/368  87.50%
+    Top 1 Accuracy of class  1 is 108/148  72.97%
+    Top 1 Accuracy of class  2 is 194/231  83.98%
+    Top 1 Accuracy of class  3 is 429/500  85.80%
+    Top 1 Accuracy of class  4 is 279/335  83.28%
+    Top 1 Accuracy of class  5 is 264/287  91.99%
+    Top 1 Accuracy of class  6 is 402/432  93.06%
+    Top 1 Accuracy of class  7 is 140/147  95.24%
+    Top 1 Accuracy of class  8 is  95/ 96  98.96%
+    Top 1 Accuracy of class  9 is 281/303  92.74%
+    Top 1 Accuracy of class 10 is 482/500  96.40%
+    Top 1 accuracy of the network on the 3347 test images: 2996/3347  89.51 %
+    89.51299671347475
+
+    Top 3 Accuracy of class  0 is 365/368  99.18%
+    Top 3 Accuracy of class  1 is 134/148  90.54%
+    Top 3 Accuracy of class  2 is 224/231  96.97%
+    Top 3 Accuracy of class  3 is 490/500  98.00%
+    Top 3 Accuracy of class  4 is 318/335  94.93%
+    Top 3 Accuracy of class  5 is 284/287  98.95%
+    Top 3 Accuracy of class  6 is 427/432  98.84%
+    Top 3 Accuracy of class  7 is 144/147  97.96%
+    Top 3 Accuracy of class  8 is  96/ 96  100.00%
+    Top 3 Accuracy of class  9 is 295/303  97.36%
+    Top 3 Accuracy of class 10 is 498/500  99.60%
+    Top 3 accuracy of the network on the 3347 test images: 3275/3347  97.85 %
+    97.84881983866148
+    ```
+- Compare to model without pretrained.
+
+
+    | Class | Transfer learning accuracy(%) | LAB2 accuracy (%) | LAB1 accuracy (%) |
+    | -----:| -----------------------------:| -----------------:| -----------------:|
+    |     0 |                         87.50 |             75.00 |             67.93 |
+    |     1 |                         72.97 |             60.14 |             30.41 |
+    |     2 |                         83.98 |             80.09 |             54.11 |
+    |     3 |                         85.80 |             79.80 |             71.40 |
+    |     4 |                         83.28 |             82.39 |             57.01 |
+    |     5 |                         91.99 |             81.53 |             70.03 |
+    |     6 |                         93.06 |             83.80 |             83.10 |
+    |     7 |                         95.24 |             85.71 |             78.23 |
+    |     8 |                         98.96 |             88.54 |             79.17 |
+    |     9 |                         92.74 |             86.47 |             72.28 |
+    |    10 |                         96.40 |             92.60 |             90.00 |
+    |  top1 |                         89.51 |             82.37 |             71.35 |
+    |  top3 |                         97.84 |             95.16 |             91.57 |
 ## Reference
 - LAB2-1
   - [pytorch基于resnet18预训练模型用于自己的训练数据集进行迁移学习](https://blog.csdn.net/booklijian/article/details/107214762)
