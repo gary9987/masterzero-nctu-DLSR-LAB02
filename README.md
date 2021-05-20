@@ -296,7 +296,7 @@ masterzero-nctu-DLSR-LAB02
     fc.bias True
     '''
     ```
-- Optimizer過濾掉不需要訓練的layer
+- Optimizer過濾掉不需要訓練的layer (5/20似乎不需要)
     ```python=
     optimizer = optim.Adam(filter(lambda p: p.requires_grad, net.parameters()))
     ```
